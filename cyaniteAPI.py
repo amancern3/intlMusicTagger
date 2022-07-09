@@ -1,6 +1,7 @@
 from datetime import datetime
 import hashlib
 import string
+from time import sleep
 from tokenize import String
 from venv import create
 import requests
@@ -46,7 +47,7 @@ def startProcess(dirName):
       trackID = createTrack(client, _id, fileName)
       
       #retriveIDs(hashedFiles, client)
-      getFeatures(client, trackID)
+      getFeatures(client, trackID, fileName)
       #redirect(url_for('uploadFiles'))
       
       
@@ -242,7 +243,9 @@ def retriveIDs(hashedFiles, client):
 #PARAMS: [IMPLEMENT] ID(s), Client(gql)
 #FN : FN TO QUERY FOR CREATED TRACK FEATURES
 #RETURN: JSON PAYLOAD
-def getFeatures(client, trackID):
+def getFeatures(client, trackID, fileName):
+    
+    sleep(45)
     
     query = gql(
     """
@@ -451,7 +454,15 @@ def getFeatures(client, trackID):
     params = {"libraryTrackId": trackID}
     result = client.execute(query, variable_values = params)
     
-    print(result)
+    # Check if directory for jsons does not exist. If it doesn't create it:
+    if not os.path.isdir('classifierResults'):
+      os.mkdir('classifierResults')
+    
+    
+    
+    # Save json as fileName.json
+    with open(os.path.join('classifierResults', f'{fileName}.json'), 'w') as j:
+      json.dump(result, j)
     
 if __name__ == '__main__':
     
