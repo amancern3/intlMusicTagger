@@ -1,16 +1,14 @@
 from datetime import datetime
-import hashlib
-import string
 from time import sleep
 from tokenize import String
 from venv import create
+
+import hashlib
+import pandas as pd
 import requests
 import os
-import hmac 
 import argparse
-import base64   
 import json
-import graphene
 
 from dotenv import load_dotenv
 from flask import Flask, request, json, redirect, url_for
@@ -25,17 +23,18 @@ secret = os.getenv("secret")
 request_url = "https://api.cyanite.ai/graphql"
 
 #def/dummy functions
-def hello(dirName):
-    startProcess(dirName)
+def startProcessProxy(dirName, path_to_csv):
+    startProcess(dirName, path_to_csv)
 
-def startProcess(dirName):
+def startProcess(dirName, path_to_csv):
  
     #init client 
     transport = AIOHTTPTransport(url=request_url, headers = { "Authorization": "Bearer {}".format(access_token)})
     client = Client(transport=transport, fetch_schema_from_transport=True)
 
+    
     #get data
-    files = file2List(dirName)
+    files = file_from_csv(path_to_csv)
     hashedFiles = hashFiles(files)
 
     #loop for file
@@ -99,6 +98,10 @@ def uploadRequest(client):
 #params : None
 #fn: converts dir to list
 #return: list
+def file_from_csv(path_to_csv):
+    df = pd.read_csv(path_to_csv)
+    return list(df['filename'])
+
 def file2List(dir_path):
     files = os.listdir(dir_path) 
     return files 
@@ -469,8 +472,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Pass in directory name.')
 
     parser.add_argument('--dir_name', help='Name of directory with mp3s')
+    parser.add_argument('--csv_name', help='Path to csv')
 
     args = parser.parse_args()
 
-    hello(args.dir_name)
+    startProcessProxy(args.dir_name, args.csv_name)
     
