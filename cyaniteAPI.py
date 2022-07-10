@@ -44,10 +44,7 @@ def startProcess(dirName, path_to_csv):
       _id, uploadUrl = uploadRequest(client)
       uploadFiles(fullFile, _id, uploadUrl)
       trackID = createTrack(client, _id, fileName)
-      
-      #retriveIDs(hashedFiles, client)
       getFeatures(client, trackID, fileName)
-      #redirect(url_for('uploadFiles'))
       
       
 
@@ -75,23 +72,24 @@ def uploadRequest(client):
     
     result = client.execute(query)
     
+    # Parse id and upload URL for uploading data of music
     _id = result['fileUploadRequest']['id']
     uploadUrl = result['fileUploadRequest']['uploadUrl']    
     
+    # Update result for log
     timestamp = str(datetime.now())
     result = {timestamp: result}
     
     print("Getting Upload Creds......")
-    a_dict = {timestamp: result}
+    data = {timestamp: result}
     
-    with open('uploadRequest.json') as f:
-        data = json.load(f)
-    data.update(a_dict)
+    # make directory if it doesn't exist
+    if not os.path.isdir('uploadRequests'):
+      os.mkdir('uploadRequests')
 
-    with open('uploadRequest.json', 'w') as f:
+    # Upload per timestamp log
+    with open(os.path.join('uploadRequests', f'{str(timestamp)}_uploadRequest.json'), 'w') as f:
         json.dump(data, f)
-    
-    
 
     return _id, uploadUrl
 
@@ -150,6 +148,7 @@ def uploadFiles(file, _id, uploadUrl):
 def createTrack(client, _id, fileName):
     print("Creating Track......")
 
+    # Run query
     query = gql(
     """
        mutation LibraryTrackCreateMutation($input: LibraryTrackCreateInput! ) {
@@ -171,8 +170,6 @@ def createTrack(client, _id, fileName):
     """
     )
     
-    #change hardcoded vars for params
-    
     params = { "input": { "uploadId": _id, "title": fileName } }
     result = client.execute(query, variable_values = params)
     trackID = result["libraryTrackCreate"]["createdLibraryTrack"]["id"]
@@ -181,14 +178,13 @@ def createTrack(client, _id, fileName):
     timestamp = str(datetime.now())
     result = {timestamp: result}
     
-    a_dict = {timestamp: result}
+    # Create dir if it doesn't exist
+    if not os.path.isdir('trackCreation'):
+      os.mkdir('trackCreation')
     
-    with open('createTrack.json') as f:
-        data = json.load(f)
-    data.update(a_dict)
-
-    with open('createTrack.json', 'w') as f:
-        json.dump(data, f)
+    # Upload per timestamp track creation log
+    with open(os.path.join('trackCreation', f'{str(timestamp)}_createTrack.json'), 'w') as f:
+        json.dump(result, f)
     
     print(result)
     
@@ -234,23 +230,13 @@ def retriveIDs(hashedFiles, client):
     with open('retriveIDs.json', 'w') as f:
         json.dump(data, f)
     
-    #result = {timestamp: result}
-    
-    
-    #with open("retriveIDs.json", "w") as write_file:
-    #    result = json.update(result, write_file)
-    #print(result )
-    
-    #add return for check 
 
 #PARAMS: [IMPLEMENT] ID(s), Client(gql)
 #FN : FN TO QUERY FOR CREATED TRACK FEATURES
 #RETURN: JSON PAYLOAD
 def getFeatures(client, trackID, fileName):
-    
-    sleep(45)
-    
-    query = gql(
+  sleep(45)
+  query = gql(
     """
     query LibraryTrackQuery($libraryTrackId: ID!) {
   libraryTrack(id: $libraryTrackId) {
@@ -454,18 +440,18 @@ def getFeatures(client, trackID, fileName):
     """
         
     )
-    params = {"libraryTrackId": trackID}
-    result = client.execute(query, variable_values = params)
-    
-    # Check if directory for jsons does not exist. If it doesn't create it:
-    if not os.path.isdir('classifierResults'):
-      os.mkdir('classifierResults')
-    
-    
-    
-    # Save json as fileName.json
-    with open(os.path.join('classifierResults', f'{fileName}.json'), 'w') as j:
-      json.dump(result, j)
+  params = {"libraryTrackId": trackID}
+  result = client.execute(query, variable_values = params)
+  
+  # Check if directory for jsons does not exist. If it doesn't create it:
+  if not os.path.isdir('classifierResults'):
+    os.mkdir('classifierResults')
+  
+  
+  
+  # Save json as fileName.json
+  with open(os.path.join('classifierResults', f'{fileName}.json'), 'w') as j:
+    json.dump(result, j)
     
 if __name__ == '__main__':
     
